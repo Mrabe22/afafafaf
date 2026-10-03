@@ -1,0 +1,42 @@
+# GitHub Actions-sjabloon. ALLEEN gebruiken in een PRIVE-repo: de agent leest klantmail, en logs van een
+# openbare repo zijn voor iedereen zichtbaar. Zet dit bestand dan in .github/workflows/ van die privé-repo,
+# commit ook data/stijlgids.md, data/voorbeelden.jsonl en data/handtekening.txt in die privé-repo, en zet
+# de waarden uit .env als repository secrets (Settings > Secrets and variables > Actions).
+#
+# Let op: privé-repo's hebben 2.000 gratis Actions-minuten per maand en de tracking-sync gebruikt er al
+# ongeveer 1.450. Dit rooster (elk half uur, ma-za, 07-21 uur) kost ongeveer 750 minuten extra.
+name: mail-agent
+
+on:
+  schedule:
+    - cron: "7,37 5-18 * * 1-6"
+  workflow_dispatch:
+
+concurrency:
+  group: mail-agent
+  cancel-in-progress: false
+
+jobs:
+  ronde:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mail-agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python agent.py --modus concept
+        env:
+          MAIL_ADRES: ${{ secrets.MAIL_ADRES }}
+          MAIL_WACHTWOORD: ${{ secrets.MAIL_WACHTWOORD }}
+          EIGEN_ADRESSEN: ${{ secrets.EIGEN_ADRESSEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SHOPIFY_SHOP: ${{ secrets.SHOPIFY_SHOP }}
+          SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
+          SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
+          LEVERANCIERS: ${{ secrets.LEVERANCIERS }}
+          STARTDATUM: ${{ vars.STARTDATUM }}
